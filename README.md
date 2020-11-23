@@ -3,7 +3,7 @@
 (Unsophisticated) Bloomfilter for carp using [carp_bitset](https://github.com/wltsmrz/carp_bitset) and [carp_murmurhash3](https://github.com/wltsmrz/carp_murmurhash3)
 
 ```clojure
-(load "https://github.com/wltsmrz/carp_bloomfilter@v0.0.1")
+(load "https://github.com/wltsmrz/carp_bloomfilter@v0.0.2")
 
 (def false-positive-rate 0.5)
 (def elements-count 2)
