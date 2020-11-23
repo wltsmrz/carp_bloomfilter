@@ -23,5 +23,4 @@
  (IO.println &(Bool.str (BloomFilter.contains? &b (String.to-bytes str3))))
  (IO.println &(Bool.str (BloomFilter.contains? &b (String.to-bytes str4))))
 )
-
 ```
