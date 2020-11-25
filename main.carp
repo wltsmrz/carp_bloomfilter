@@ -1,43 +1,37 @@
-(load "https://github.com/wltsmrz/carp_bitset@v0.1.0")
+(load "https://github.com/wltsmrz/carp_bitset@v0.2.0")
 (load "https://github.com/wltsmrz/carp_murmurhash3@v0.5.0")
 
 (defmodule BloomFilter
   (deftype BloomFilter [ ok Int, om Uint32, bs (Array Uint64) ])
 
   (hidden u64mod)
-  (private u64mod)
   (deftemplate u64mod (Fn [Uint32 Uint32] Uint64)
-  "uint64_t $NAME(uint32_t m, uint32_t n)"
-  "$DECL { return (uint64_t)(m%n); }")
+    "uint64_t $NAME(uint32_t m, uint32_t n)"
+    "$DECL { return (uint64_t)(m%n); }")
 
   (hidden index->u32)
-  (private index->u32)
   (deftemplate index->u32 (Fn [Int] Uint32)
-  "uint32_t $NAME(int v)"
-  "$DECL { return (uint32_t)v; }")
+    "uint32_t $NAME(int v)"
+    "$DECL { return (uint32_t)v; }")
 
   (def ln2 (log 2.0))
   (def ln2squared (pow ln2 2.0))
 
   (hidden optimal-k)
-  (private optimal-k)
   (defn optimal-k [fp]
     (to-int (ceil (/ (* -1.0 (log fp)) ln2))))
 
   (hidden optimal-m)
-  (private optimal-m)
   (defn optimal-m [fp count]
     (to-int (ceil (/ (* (* -1.0 (from-int count)) (log fp)) ln2squared))))
 
   (hidden get-index)
-  (private get-index)
   (defn get-index [bloom h]
     (u64mod h @(BloomFilter.om bloom)))
 
   (hidden get-seed)
-  (private get-seed)
   (defn get-seed [n]
-   (index->u32 n))
+    (index->u32 n))
 
   (defn add [bloom x]
     (for [i 0 @(BloomFilter.ok bloom)]
@@ -49,7 +43,7 @@
       (for [i 0 @(BloomFilter.ok bloom)]
         (let-do [h (Murmur3.hash-32x1 &x (get-seed i))]
           (when (not (BitSet.contains? (BloomFilter.bs bloom) (get-index bloom h)))
-          (do (set! res false) (break))))) res))
+            (do (set! res false) (break))))) res))
 
   (defn init [fpr dm]
     (let [ok (optimal-k fpr) om (optimal-m fpr dm)]
