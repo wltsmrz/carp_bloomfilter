@@ -1,20 +1,23 @@
-(load "https://github.com/wltsmrz/carp_bitset@v0.2.0")
+(load "https://github.com/wltsmrz/carp_bitset@v0.3.0")
 (load "https://github.com/wltsmrz/carp_murmurhash3@v0.5.0")
 
-(defmodule BloomFilter
-  (deftype BloomFilter [ ok Int, om Uint32, bs (Array Uint64) ])
+(deftype BloomFilterT [ ok Int, om Int, bs (Array Uint64) ])
 
+(defmodule BloomFilter
   (hidden u64mod)
-  (deftemplate u64mod (Fn [Uint32 Uint32] Uint64)
-    "uint64_t $NAME(uint32_t m, uint32_t n)"
+  (deftemplate u64mod (Fn [Uint32 Int] Uint64)
+    "uint64_t $NAME(uint32_t m, int n)"
     "$DECL { return (uint64_t)(m%n); }")
 
-  (hidden index->u32)
-  (deftemplate index->u32 (Fn [Int] Uint32)
+  (hidden u32)
+  (deftemplate u32 (Fn [Int] Uint32)
     "uint32_t $NAME(int v)"
     "$DECL { return (uint32_t)v; }")
 
+  (hidden ln2)
   (def ln2 (log 2.0))
+
+  (hidden ln2squared)
   (def ln2squared (pow ln2 2.0))
 
   (hidden optimal-k)
@@ -25,29 +28,34 @@
   (defn optimal-m [fp count]
     (to-int (ceil (/ (* (* -1.0 (from-int count)) (log fp)) ln2squared))))
 
-  (hidden get-index)
-  (defn get-index [bloom h]
-    (u64mod h @(BloomFilter.om bloom)))
-
-  (hidden get-seed)
-  (defn get-seed [n]
-    (index->u32 n))
+  (hidden bitset-index)
+  (defn bitset-index [bloom h]
+    (u64mod h @(BloomFilterT.om bloom)))
 
   (defn add [bloom x]
-    (for [i 0 @(BloomFilter.ok bloom)]
-      (let-do [h (Murmur3.hash-32x1 &x (get-seed i))]
-        (BitSet.add! (BloomFilter.bs bloom) (get-index bloom h)))))
+    (for [i 0 @(BloomFilterT.ok bloom)]
+      (let-do [h (Murmur3.hash-32x1 &x (u32 i))]
+        (BitSet.add! (BloomFilterT.bs bloom) (bitset-index bloom h)))))
 
   (defn contains? [bloom x]
     (let-do [res true]
-      (for [i 0 @(BloomFilter.ok bloom)]
-        (let-do [h (Murmur3.hash-32x1 &x (get-seed i))]
-          (when (not (BitSet.contains? (BloomFilter.bs bloom) (get-index bloom h)))
+      (for [i 0 @(BloomFilterT.ok bloom)]
+        (let-do [h (Murmur3.hash-32x1 &x (u32 i))]
+          (when (not (BitSet.contains? (BloomFilterT.bs bloom) (bitset-index bloom h)))
             (do (set! res false) (break))))) res))
 
   (defn init [fpr dm]
     (let [ok (optimal-k fpr) om (optimal-m fpr dm)]
-      (BloomFilter.init ok (index->u32 om)
+      (BloomFilterT.init ok om
         (BitSet.init-with-bit-capacity om))))
+
+  (defn load [bloom bytes]
+    (BloomFilterT.init
+      @(BloomFilterT.ok bloom)
+      @(BloomFilterT.om bloom)
+      (BitSet.from-array &(Binary.unsafe-bytes->int64-seq (ByteOrder.LittleEndian) bytes))))
+
+  (defn dump [bloom]
+    (Binary.int64-seq->bytes (ByteOrder.LittleEndian) (BloomFilterT.bs bloom)))
 )
 
